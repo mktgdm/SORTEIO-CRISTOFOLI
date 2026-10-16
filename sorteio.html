@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Sorteio da Cesta Cristófoli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: tela de palco para projetar — painel de importação à esquerda, roleta de nomes no centro */
+:root{
+  --ink:#0d0b08;--stage:#15120c;--gold:#d9b25f;--gold-hi:#f3dc9a;--gold-lo:#9a7531;
+  --text:#f4ede0;--muted:#b9ad97;--line:rgba(217,178,95,.28);--err:#e2735f;--ok:#5fb98a;
+  --display:"Young Serif",Georgia,serif;--body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--ink)}
+body{margin:0;color:var(--text);font:16px/1.5 var(--body);min-height:100vh;background:radial-gradient(90% 70% at 50% 0%,rgba(217,178,95,.16),transparent 65%),var(--ink)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));padding-block:22px 40px}
+.grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:28px;align-items:start}
+.panel{background:var(--stage);border:1px solid var(--line);border-radius:18px;padding:22px;display:grid;gap:16px}
+.panel h2{font:700 13px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0}
+.panel p{margin:0;font-size:14px;color:var(--muted)}
+.drop{border:1.5px dashed #57492f;border-radius:14px;padding:20px;text-align:center;cursor:pointer;color:var(--muted);font-size:14px;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--gold);background:rgba(217,178,95,.06)}
+.drop b{color:var(--gold-hi);display:block;font-size:15px;margin-bottom:4px}
+textarea{width:100%;min-height:110px;resize:vertical;font:14px/1.4 var(--body);color:var(--text);background:#0f0d09;border:1px solid #3a3122;border-radius:12px;padding:12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{border:1px solid #2c251a;border-radius:12px;padding:12px}
+.stat strong{display:block;font:400 28px/1 var(--display);color:var(--gold-hi);font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.btn{appearance:none;border:0;cursor:pointer;font:700 15px/1 var(--body);border-radius:999px;padding:14px 22px;transition:transform .15s}
+.btn:focus-visible,textarea:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
+.btn.gold{color:var(--ink);background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold-lo))}
+.btn.ghost{color:var(--gold-hi);background:transparent;border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.note{font-size:13px}
+.note.err{color:var(--err)}.note.ok{color:var(--ok)}
+
+.stage{display:grid;gap:22px;text-align:center}
+.brand{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.brand b{color:var(--gold)}
+h1{font:400 clamp(30px,4.4vw,52px)/1.05 var(--display);margin:6px 0 0;text-wrap:balance}
+h1 em{font-style:normal;background:linear-gradient(100deg,var(--gold-lo),var(--gold-hi) 45%,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.reel{position:relative;border:1px solid var(--line);border-radius:26px;background:var(--stage);min-height:260px;display:grid;place-items:center;padding:30px 20px;overflow:hidden}
+.reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
+.reel::before{top:28%}.reel::after{bottom:28%}
+.name{font:400 clamp(34px,6vw,76px)/1.05 var(--display);text-wrap:balance;word-break:break-word;max-width:100%}
+.name.rolling{color:var(--muted);filter:blur(.4px)}
+.name.win{background:linear-gradient(100deg,var(--gold-lo),var(--gold-hi) 40%,var(--gold) 70%,var(--gold-lo));-webkit-background-clip:text;background-clip:text;color:transparent;animation:pop .6s cubic-bezier(.2,1.4,.4,1)}
+.meta{margin-top:12px;color:var(--muted);font-size:16px;letter-spacing:.04em;min-height:24px;font-variant-numeric:tabular-nums}
+.label{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;min-height:16px}
+@keyframes pop{from{transform:scale(.85);opacity:.3}to{transform:none;opacity:1}}
+.draw{font-size:18px;padding:20px 40px;justify-self:center}
+.hist{text-align:left}
+.hist h3{font:700 13px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{padding:10px 8px;border-bottom:1px solid #2a2318;text-align:left;vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.n{font-variant-numeric:tabular-nums;color:var(--gold-hi)}
+.tbl{overflow-x:auto}
+.empty{color:var(--muted);font-size:14px;padding:12px 0}
+.confirm{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;font-size:14px;color:var(--muted)}
+.verify{border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;background:rgba(217,178,95,.06)}
+.verify p{margin:0;color:var(--muted)}.verify b{color:var(--text)}.verify a{color:var(--gold-hi)}
+.btn.bad{color:var(--err);border-color:rgba(226,115,95,.5)}
+tr.out td{color:#7d7262;text-decoration:line-through}tr.out td.n{text-decoration:none;color:var(--err)}
+.name.out{color:#7d7262;text-decoration:line-through;background:none;-webkit-text-fill-color:currentColor}
+.login{min-height:100vh;display:grid;place-items:center;padding-block:30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.login .panel{width:min(400px,100%);text-align:left}
+.l{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:-8px}
+.in{width:100%;font:500 16px/1.2 var(--body);color:var(--text);background:#0f0d09;border:1px solid #3a3122;border-radius:12px;padding:13px 14px}
+.in:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+.fallback summary{cursor:pointer;color:var(--gold);font-size:14px;font-weight:600}
+.fallback{display:grid;gap:12px}.fallback[open]>*+*{margin-top:12px}
+canvas#fx{position:fixed;inset:0;pointer-events:none;width:100%;height:100%}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.name.win{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<section class="login" id="login">
+  <form class="panel" id="loginform" novalidate>
+    <div class="brand"><b>Área da consultora DM</b></div>
+    <h1 style="font-size:34px">Sorteio da <em>cesta Cristófoli</em></h1>
+    <label class="l" for="cnome">Seu nome</label>
+    <input class="in" type="text" id="cnome" autocomplete="name" placeholder="Ex.: Juliana">
+    <label class="l" for="senha">Senha</label>
+    <input class="in" type="password" id="senha" autocomplete="current-password" placeholder="Senha da consultora">
+    <button class="btn gold" type="submit" id="entrar">Entrar</button>
+    <p class="note err" id="loginerr"></p>
+  </form>
+</section>
+<div class="wrap" id="app" hidden>
+  <div class="grid">
+    <aside class="panel">
+      <h2>Cadastros da planilha</h2>
+      <p id="whoami">Conectada à planilha do sorteio. A lista atualiza sozinha a cada 30 segundos.</p>
+      <div class="row"><button class="btn ghost" id="refresh" type="button">Atualizar agora</button><button class="btn ghost" id="logout" type="button">Sair</button></div>
+      <p class="note" id="importmsg"></p>
+      <details class="fallback"><summary>Sem internet? Importar lista manualmente</summary>
+        <p>Baixe a aba Cadastros da planilha em CSV (Arquivo › Fazer download › .csv) e solte aqui.</p>
+        <label class="drop" id="drop" for="file"><b>Escolher arquivo CSV</b>ou arraste para cá</label>
+        <input type="file" id="file" accept=".csv,text/csv" hidden>
+        <p>Ou cole uma lista, um nome por linha (nome; WhatsApp; @ do Instagram):</p>
+        <textarea id="paste" placeholder="Ana Souza; (11) 98888-1234; @anasouza&#10;Bruna Lima; (11) 97777-4321; @brunalima"></textarea>
+        <div class="row"><button class="btn ghost" id="usepaste" type="button">Usar lista colada</button></div>
+      </details>
+      <div class="stats">
+        <div class="stat"><strong id="s-valid">0</strong><span>participantes válidas</span></div>
+        <div class="stat"><strong id="s-dup">0</strong><span>repetidas removidas</span></div>
+        <div class="stat"><strong id="s-noreg">0</strong><span>sem aceite do regulamento ou do Instagram</span></div>
+        <div class="stat"><strong id="s-left">0</strong><span>ainda no sorteio</span></div>
+      </div>
+      <label class="note" style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="showfull"> Mostrar WhatsApp completo na tela</label>
+    </aside>
+
+    <main class="stage">
+      <div>
+        <div class="brand"><b>Manicures que Inspiram</b> · 4ª edição · Dermomed × Cristófoli</div>
+        <h1>Sorteio da <em>cesta Cristófoli</em></h1>
+      </div>
+      <div class="reel">
+        <div>
+          <div class="label" id="label"></div>
+          <div class="name" id="name">Carregando cadastros…</div>
+          <div class="meta" id="meta"></div>
+        </div>
+      </div>
+      <div class="verify" id="verify" hidden>
+        <p>Confira se <b id="vuser"></b> segue o <b>@oficialdermomed</b>. <a id="vlink" href="https://www.instagram.com/" target="_blank" rel="noopener">Abrir perfil no Instagram</a></p>
+        <div class="row" style="justify-content:center"><button class="btn gold" id="vok" type="button">Segue — confirmar ganhadora</button><button class="btn ghost bad" id="vno" type="button">Não segue — desclassificar e sortear de novo</button></div>
+      </div>
+      <button class="btn gold draw" id="draw" type="button" disabled>Sortear</button>
+      <div class="hist">
+        <h3>Resultado</h3>
+        <div class="tbl"><table><thead><tr><th>#</th><th>Nome</th><th>Instagram</th><th>WhatsApp</th><th>Situação</th><th>Horário</th></tr></thead><tbody id="hist"></tbody></table></div>
+        <div class="empty" id="histempty">Nenhum nome sorteado ainda. Depois de cada sorteio, confira se a pessoa segue o @oficialdermomed. Se não seguir, ela é desclassificada e um novo nome é sorteado.</div>
+        <div class="confirm" id="resetbox"><button class="btn ghost" id="reset" type="button">Zerar resultado</button></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+/* URL do Apps Script (Implantar > App da Web), a mesma da landing */
+var API='COLE_AQUI_A_URL_DO_APPS_SCRIPT';
+(function(){
+  var KEY='sorteio-cristofoli-v1';
+  var senha='',consultora='';
+  var people=[],drawn=[];
+  var $=function(id){return document.getElementById(id)};
+
+  function load(){try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s){people=s.people||[];drawn=s.drawn||[];$('s-dup').textContent=s.dup||0;$('s-noreg').textContent=s.noreg||0;}}catch(e){}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({people:people,drawn:drawn,dup:+$('s-dup').textContent,noreg:+$('s-noreg').textContent}))}catch(e){}}
+
+  function parseCSV(t){
+    var rows=[],row=[],f='',q=false;
+    t=t.replace(/^\uFEFF/,'');
+    var sep=(t.split('\n')[0].indexOf(',')>-1)?',':';';
+    for(var i=0;i<t.length;i++){var c=t[i];
+      if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}
+      else if(c=='"')q=true;
+      else if(c==sep){row.push(f);f=''}
+      else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;row.push(f);rows.push(row);row=[];f=''}
+      else f+=c;}
+    if(f||row.length){row.push(f);rows.push(row)}
+    return rows.filter(function(r){return r.some(function(x){return x.trim()})});
+  }
+  function digits(s){return String(s||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'')}
+  function norm(s){return String(s||'').trim().toLowerCase()}
+
+  function ingest(list,noreg){
+    var seen={},out=[],dup=0;
+    list.forEach(function(p){
+      p.nome=String(p.nome||'').trim().replace(/\s+/g,' ');
+      if(!p.nome)return;
+      var k1=digits(p.whatsapp),k2=norm(p.email),k3=norm(p.nome);
+      var keys=[k1&&('w'+k1),k2&&('e'+k2)].filter(Boolean);
+      if(!keys.length)keys=['n'+k3];
+      if(keys.some(function(k){return seen[k]})){dup++;return}
+      keys.forEach(function(k){seen[k]=1});
+      p.id=keys[0];out.push(p);
+    });
+    people=out;drawn=drawn.filter(function(d){return out.some(function(p){return p.id===d.id})});
+    $('s-dup').textContent=dup;$('s-noreg').textContent=noreg;
+    save();render();
+    var m=$('importmsg');m.className='note ok';m.textContent=out.length+' participantes carregadas.';
+  }
+
+  function fromCSV(text){
+    var rows=parseCSV(text);if(rows.length<2)return fail('O arquivo não tem cadastros.');
+    var h=rows[0].map(function(x){return norm(x)});
+    function col(){for(var i=0;i<arguments.length;i++){var j=h.indexOf(arguments[i]);if(j>-1)return j}return -1}
+    var cN=col('nome','name'),cW=col('whatsapp','telefone','phone'),cE=col('email','e-mail'),cA=col('atuacao','atuação'),cR=col('regulamento'),cI=col('instagram'),cS=col('segue_instagram');
+    if(cN<0)return fail('Não encontrei a coluna "nome" no CSV. Confira se é o export do formulário do sorteio.');
+    var noreg=0,list=[];
+    rows.slice(1).forEach(function(r){
+      if((cR>-1&&norm(r[cR])!=='sim')||(cS>-1&&norm(r[cS])!=='sim')){noreg++;return}
+      list.push({nome:r[cN],whatsapp:cW>-1?r[cW]:'',email:cE>-1?r[cE]:'',atuacao:cA>-1?r[cA]:'',instagram:cI>-1?r[cI]:''});
+    });
+    ingest(list,noreg);
+  }
+  function fail(t){var m=$('importmsg');m.className='note err';m.textContent=t}
+
+  $('file').addEventListener('change',function(e){var f=e.target.files[0];if(f)f.text().then(fromCSV)});
+  var drop=$('drop');
+  ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('over')})});
+  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('over')})});
+  drop.addEventListener('drop',function(e){var f=e.dataTransfer.files[0];if(f)f.text().then(fromCSV)});
+  $('usepaste').addEventListener('click',function(){
+    var lines=$('paste').value.split(/\n/).map(function(l){return l.trim()}).filter(Boolean);
+    if(!lines.length)return fail('Cole pelo menos um nome.');
+    ingest(lines.map(function(l){var p=l.split(/[;\t]/);return{nome:p[0],whatsapp:p[1]||'',instagram:p[2]||'',email:'',atuacao:''}}),0);
+  });
+
+  function phone(p){var d=digits(p.whatsapp);if(!d)return '';
+    if($('showfull').checked)return '('+d.slice(0,2)+') '+d.slice(2,-4)+'-'+d.slice(-4);
+    return '('+d.slice(0,2)+') •••••-'+d.slice(-4);}
+  $('showfull').addEventListener('change',render);
+  function igUser(p){return String(p.instagram||'').trim().replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i,'').replace(/[\/?].*$/,'').replace(/^@/,'')}
+
+  function pool(){return people.filter(function(p){return !drawn.some(function(d){return d.id===p.id})})}
+  function rand(n){var a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}
+  function labelOf(i){
+    var d=drawn[i];if(d.status==='desclassificada')return 'Desclassificada';
+    var k=0;for(var j=0;j<i;j++)if(drawn[j].status!=='desclassificada')k++;
+    return k===0?'Ganhadora':k+'ª suplente';
+  }
+  function last(){return drawn[drawn.length-1]}
+  function pending(){return drawn.length&&last().status==='pendente'}
+
+  function render(){
+    $('s-valid').textContent=people.length;$('s-left').textContent=pool().length;
+    var hasWinner=drawn.some(function(d){return d.status!=='desclassificada'});
+    var b=$('draw');
+    b.hidden=pending()||rolling;
+    b.disabled=!pool().length;
+    b.textContent=!people.length?'Sortear':(hasWinner?'Sortear suplente':(drawn.length?'Sortear novo nome':'Sortear ganhadora'));
+    if(people.length&&!pool().length)b.textContent='Não há mais nomes para sortear';
+    var tb=$('hist');tb.innerHTML='';
+    drawn.forEach(function(d,i){
+      var p=people.find(function(x){return x.id===d.id})||d;
+      var st={pendente:'Conferindo Instagram',confirmada:'Segue o perfil',desclassificada:'Não segue — re-sorteado'}[d.status]||'';
+      var tr=document.createElement('tr');if(d.status==='desclassificada')tr.className='out';
+      [labelOf(i),p.nome,igUser(p)?'@'+igUser(p):'',phone(p),st,d.at].forEach(function(v,j){var td=document.createElement('td');if(j===0)td.className='n';td.textContent=v;tr.appendChild(td)});
+      tb.appendChild(tr);
+    });
+    $('histempty').hidden=!!drawn.length;$('resetbox').hidden=!drawn.length;
+    var v=$('verify');v.hidden=!(pending()&&!rolling);
+    if(!rolling){
+      if(drawn.length){var i=drawn.length-1,p=people.find(function(x){return x.id===drawn[i].id})||drawn[i];show(p,labelOf(i),drawn[i].status!=='desclassificada');
+        if(drawn[i].status==='desclassificada'){$('name').className='name out';}
+        if(pending()){var u=igUser(p);$('vuser').textContent=u?'@'+u:'(sem @ informado)';var a=$('vlink');a.hidden=!u;if(u)a.href='https://www.instagram.com/'+encodeURIComponent(u)+'/';}
+      }
+      else if(people.length){$('label').textContent='';$('name').className='name';$('name').textContent=people.length+' participantes';$('meta').textContent='Tudo pronto para o sorteio'}
+    }
+  }
+  function show(p,label,win){$('label').textContent=label||'';var n=$('name');n.className='name'+(win?' win':' rolling');n.textContent=p.nome;var u=igUser(p);$('meta').textContent=win?[u?'@'+u:'',phone(p),p.atuacao].filter(Boolean).join(' · '):''}
+
+  var rolling=false;
+  $('draw').addEventListener('click',drawOne);
+  function drawOne(){
+    var pl=pool();if(!pl.length||rolling||pending())return;
+    rolling=true;render();
+    var winner=pl[rand(pl.length)];
+    var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var t=0,total=reduce?1:46;
+    (function tick(){
+      t++;
+      if(t>=total){
+        drawn.push({id:winner.id,nome:winner.nome,whatsapp:winner.whatsapp,instagram:winner.instagram,atuacao:winner.atuacao,status:'pendente',at:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});
+        save();rolling=false;render();if(!reduce)confetti();return;
+      }
+      show(pl[rand(pl.length)],'Sorteando…',false);
+      setTimeout(tick,40+Math.pow(t/total,3)*360);
+    })();
+  }
+  function registra(i){
+    var d=drawn[i],p=people.find(function(x){return x.id===d.id})||d;
+    api({acao:'resultado',posicao:labelOf(i),nome:p.nome,whatsapp:p.whatsapp||'',email:p.email||'',instagram:p.instagram||'',
+      situacao:d.status==='confirmada'?'Segue o perfil — válida':'Não segue — desclassificada',consultora:consultora})
+      .catch(function(){var m=$('importmsg');m.className='note err';m.textContent='O resultado não foi gravado na planilha. Anote ou tire foto da tabela.'});
+  }
+  $('vok').addEventListener('click',function(){if(!pending())return;last().status='confirmada';save();render();registra(drawn.length-1);});
+  $('vno').addEventListener('click',function(){if(!pending())return;last().status='desclassificada';save();render();registra(drawn.length-1);if(pool().length)setTimeout(drawOne,900);});
+
+  function api(o){
+    return fetch(API,{method:'POST',body:new URLSearchParams(Object.assign({senha:senha},o))}).then(function(r){return r.json()});
+  }
+  function puxar(silencioso){
+    if(rolling)return Promise.resolve();
+    var m=$('importmsg');if(!silencioso){m.className='note';m.textContent='Buscando cadastros…'}
+    return api({acao:'listar'}).then(function(res){
+      if(!res.ok)throw new Error(res.erro||'Erro');
+      var noreg=0,list=[];
+      res.participantes.forEach(function(p){if(p.regulamento!=='sim'||p.segue!=='sim'){noreg++;return}list.push(p)});
+      ingest(list,noreg);
+      m.className='note ok';m.textContent=list.length+' participantes · atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      return res;
+    }).catch(function(e){m.className='note err';m.textContent='Não consegui ler a planilha agora ('+e.message+'). Os nomes já carregados continuam valendo.';throw e});
+  }
+  function entrar(s,n){
+    senha=s;consultora=n;
+    if(API.indexOf('script.google.com')<0){$('loginerr').textContent='A página ainda não foi ligada à planilha.';return}
+    $('entrar').disabled=true;$('entrar').textContent='Entrando…';$('loginerr').textContent='';
+    api({acao:'listar'}).then(function(res){
+      $('entrar').disabled=false;$('entrar').textContent='Entrar';
+      if(!res.ok){$('loginerr').textContent=res.erro||'Senha incorreta.';return}
+      try{sessionStorage.setItem(KEY+'-s',JSON.stringify({s:s,n:n}))}catch(e){}
+      $('login').hidden=true;$('app').hidden=false;
+      $('whoami').textContent=(n?n+', você está':'Você está')+' conectada à planilha do sorteio. A lista atualiza sozinha a cada 30 segundos.';
+      puxar(true).catch(function(){});
+      setInterval(function(){if(!rolling&&!pending())puxar(true).catch(function(){})},30000);
+    }).catch(function(){$('entrar').disabled=false;$('entrar').textContent='Entrar';$('loginerr').textContent='Sem conexão com a planilha. Confira a internet e tente de novo.'});
+  }
+  $('loginform').addEventListener('submit',function(e){e.preventDefault();var s=$('senha').value;if(!s){$('loginerr').textContent='Digite a senha.';return}entrar(s,$('cnome').value.trim())});
+  $('refresh').addEventListener('click',function(){puxar(false).catch(function(){})});
+  $('logout').addEventListener('click',function(){try{sessionStorage.removeItem(KEY+'-s')}catch(e){}location.reload()});
+  try{var ss=JSON.parse(sessionStorage.getItem(KEY+'-s')||'null');if(ss){$('cnome').value=ss.n||'';entrar(ss.s,ss.n)}}catch(e){}
+
+  var armed=false;
+  $('reset').addEventListener('click',function(){
+    var b=$('reset');
+    if(!armed){armed=true;b.textContent='Toque de novo para zerar';setTimeout(function(){armed=false;b.textContent='Zerar resultado'},3000);return}
+    armed=false;b.textContent='Zerar resultado';drawn=[];save();render();
+  });
+
+  function confetti(){
+    var c=$('fx'),x=c.getContext('2d'),W=c.width=innerWidth*devicePixelRatio,H=c.height=innerHeight*devicePixelRatio;
+    var cols=['#f3dc9a','#d9b25f','#9a7531','#fff6dc'],ps=[];
+    for(var i=0;i<180;i++)ps.push({x:W/2+(Math.random()-.5)*W*.3,y:H*.35,vx:(Math.random()-.5)*26,vy:-Math.random()*26-6,r:Math.random()*8+4,a:Math.random()*6,c:cols[i%4]});
+    var f=0;(function loop(){x.clearRect(0,0,W,H);ps.forEach(function(p){p.vy+=.7;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=.15;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore()});
+      if(++f<150)requestAnimationFrame(loop);else x.clearRect(0,0,W,H)})();
+  }
+
+  load();render();
+})();
+</script>
+</body>
+</html>
